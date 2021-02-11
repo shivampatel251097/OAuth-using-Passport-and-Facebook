@@ -251,7 +251,7 @@ dishRouter.route('/:dishId/comments/:commentId')
                 .then((dish)=>{
                     res.statusCode = 200;
                     res.setHeader('Content-Type', 'application/json');
-                    res.json(dish); 
+                    res.json(dish);
                 })
             }, (err)=> next(err));
         }

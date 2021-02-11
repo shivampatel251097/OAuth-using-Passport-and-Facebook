@@ -17,8 +17,8 @@ favouriteRouter.use(bodyParser.json());
 //Routes
 
 favouriteRouter.route('/')
-// .options(cors.corsWithOptions, (req,res) =>{ res.sendStatus(200);})
-.get(authenticate.verifyUser, (req,res,next)=>{
+.options(cors.corsWithOptions, (req,res) =>{ res.sendStatus(200);})
+.get(cors.cors,authenticate.verifyUser, (req,res,next)=>{
     Favourites.find({})
     .populate('user')
     .populate('dishes')
@@ -45,7 +45,7 @@ favouriteRouter.route('/')
     }, (err)=>{next(err)})
     .catch((err)=>next(err));
 })
-.post(authenticate.verifyUser, (req,res,next)=>{
+.post(cors.corsWithOptions,authenticate.verifyUser, (req,res,next)=>{
     Favourites.find({})
     .populate('user')
     .populate('dishes')
@@ -60,13 +60,14 @@ favouriteRouter.route('/')
                 user: req.user._id
             });
         }
-
         for(let i =0;i<req.body.dishes.length;i++){
+            var flag = false
             for(let j=0;j<current_user_favs.dishes.length;j++){
                 if(req.body.dishes[i]==current_user_favs.dishes[j]._id){
-                    i=i+1;
+                    flag=true;
                 }
             }
+            if(flag==false)
             current_user_favs.dishes.push(req.body.dishes[i]);
         }
         current_user_favs.save()
@@ -80,14 +81,14 @@ favouriteRouter.route('/')
     .catch((err)=> next(err));
 })
 
-.put(authenticate.verifyUser,(req,res,next)=>{
+.put(cors.corsWithOptions,authenticate.verifyUser,(req,res,next)=>{
     res.statusCode = 403;
     res.setHeader('Content-Type', 'application/json');
     res.send('PUT operation not supported on /favoirites');
     console.log('PUT operation not supported on /favoirites');
 })
 
-.delete(authenticate.verifyUser,(req,res,next)=>{
+.delete(cors.corsWithOptions,authenticate.verifyUser,(req,res,next)=>{
     Favourites.find({})
     .populate('user')
     .populate('dishes')
@@ -99,7 +100,7 @@ favouriteRouter.route('/')
                 .then((deleted)=>{
                     res.statusCode = 200;
                     res.setHeader('Content-Type', 'application/json');
-                    res.json(deleted);
+                    res.json("deleted!");
                 },(err)=>next(err));
             }
             else{
@@ -118,13 +119,14 @@ favouriteRouter.route('/')
 })
 
 favouriteRouter.route('/:dishID')
-.get(authenticate.verifyUser,(req,res,next)=>{
+.options(cors.corsWithOptions, (req,res) =>{ res.sendStatus(200);})
+.get(cors.cors,authenticate.verifyUser,(req,res,next)=>{
     res.statusCode = 403;
     res.setHeader('Content-Type', 'application/json');
     res.send('GET operation is not supported on /favoirites/'+req.params.dishID);
     console.log('GET operation not supported on /favoirites');
 })
-.post(authenticate.verifyUser,(req,res,next)=>{
+.post(cors.corsWithOptions,authenticate.verifyUser,(req,res,next)=>{
     Favourites.find({})
     .populate('user')
     .populate('dishes')
@@ -155,6 +157,58 @@ favouriteRouter.route('/:dishID')
         },(err)=>next(err))
         .catch((err)=>next(err));
     },(err)=>next(err))
+    .catch((err)=>next(err));
+})
+
+.put(cors.corsWithOptions,authenticate.verifyUser,(req,res,next)=>{
+    res.statusCode=403;
+    res.setHeader("Content-Type",'application/json');
+    res.send("PUT operation is not supported on favourites/"+dishID);
+    console.log("PUT operation is not supported on favourites/"+dishID);
+})
+
+.delete(cors.corsWithOptions,authenticate.verifyUser,(req,res,next)=>{
+    Favourites.find({})
+    .populate('user')
+    .populate('dishes')
+    .then((favourites)=>{
+        var user_dishes
+        if(favourites){
+            var flag
+            user_dishes=favourites.filter((favs)=> favs.user._id.toString()=== req.user._id.toString())[0];
+            if(user_dishes){
+                for(let i=0;i<user_dishes.dishes.length;i++){
+                    if(user_dishes.dishes[i]._id.toString()===req.params.dishID.toString()){
+                        user_dishes.dishes.remove(req.params.dishID);
+                        flag=true;
+                    }
+                }
+                if(flag){
+                    user_dishes.save()
+                    .then((deletedDish)=>{
+                        res.statusCode = 200;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.json(deletedDish);
+                    })
+                }
+                else{
+                    var err = new Error("You have no such favourite dish");
+                    err.status=404;
+                    return next(err);
+                }
+            }
+            else{
+                var err = new Error("You have no favourite dishes");
+                err.status=404;
+                return next(err);
+            }
+        }
+        else{
+            var err = new Error("You have no favourite dishes");
+            err.status=404;
+            return next(err);
+        }
+    },(err)=> next(err))
     .catch((err)=>next(err));
 })
 
