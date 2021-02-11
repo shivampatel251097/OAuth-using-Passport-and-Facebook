@@ -19,22 +19,22 @@ favouriteRouter.use(bodyParser.json());
 favouriteRouter.route('/')
 .options(cors.corsWithOptions, (req,res) =>{ res.sendStatus(200);})
 .get(cors.cors,authenticate.verifyUser, (req,res,next)=>{
-    Favourites.find({})
+    Favourites.findOne({user: req.user._id})
     .populate('user')
     .populate('dishes')
     .then((favourites)=>{
         if(favourites){
-            current_user_favs= favourites.filter(fav=> fav.user._id.toString() === req.user._id.toString())[0];
-            // console.log("fav",favourites[0].user._id);
-            // console.log("req",current_user_favs.dishes);
-            if(!current_user_favs){
-                var err = new Error('You have no favourites please add some!');
-                err.status = 404;
-                return next(err);
-            }
+            // current_user_favs= favourites.filter(fav=> fav.user._id.toString() === req.user._id.toString())[0];
+            // // console.log("fav",favourites[0].user._id);
+            // // console.log("req",current_user_favs.dishes);
+            // if(!current_user_favs){
+            //     var err = new Error('You have no favourites please add some!');
+            //     err.status = 404;
+            //     return next(err);
+            // }
             res.statusCode= 200;
             res.setHeader('Content-Type','application/json');
-            res.json(current_user_favs);
+            res.json(favourites);
         }
         else{
             var err = new Error('You have no favourites please add some!');
@@ -89,31 +89,13 @@ favouriteRouter.route('/')
 })
 
 .delete(cors.corsWithOptions,authenticate.verifyUser,(req,res,next)=>{
-    Favourites.find({})
+    Favourites.findOneAndRemove({user:req.user._id})
     .populate('user')
     .populate('dishes')
-    .then((favourites)=>{
-        if(favourites){
-            current_user_favs_remove= favourites.filter(fav=> fav.user._id.toString() === req.user._id.toString())[0];
-            if(current_user_favs_remove){
-                current_user_favs_remove.remove()
-                .then((deleted)=>{
-                    res.statusCode = 200;
-                    res.setHeader('Content-Type', 'application/json');
-                    res.json("deleted!");
-                },(err)=>next(err));
-            }
-            else{
-                var err = new Error('You have no favourites.');
-                err.status = 404;
-                return next(err);
-            }
-        }
-        else{
-            var err = new Error('You have no favourites');
-            err.status = 404;
-            return next(err);
-        }
+    .then((result)=>{
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json("deleted!");
     },(err)=>next(err))
     .catch((err)=>next(err));
 })
