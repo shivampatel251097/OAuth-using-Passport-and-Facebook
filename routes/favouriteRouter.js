@@ -134,8 +134,8 @@ favouriteRouter.route('/:dishID')
             current_user_favs = favourites.filter(favs => favs.user._id.toString()=== req.user._id.toString())[0];
         }
         if(!current_user_favs){
-            current_user_favs =  new({
-                "user":req.user._id,
+            current_user_favs =  new Favourites({
+                "user":req.user._id
             });
         }
         var flag
